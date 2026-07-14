@@ -38,6 +38,8 @@ Route::prefix('admin')->group(function (): void {
             Route::post('/devices', [DeviceCrudController::class, 'store'])->name('admin.devices.store');
             Route::put('/devices/{device}', [DeviceCrudController::class, 'update'])->name('admin.devices.update');
             Route::delete('/devices/{device}', [DeviceCrudController::class, 'destroy'])->name('admin.devices.destroy');
+            Route::get('/devices/qr-codes/print', [DeviceCrudController::class, 'printAllQrCodes'])->name('admin.devices.qr-codes.print');
+            Route::get('/devices/{device}/qr-code', [DeviceCrudController::class, 'showQrCode'])->name('admin.devices.qr-code');
 
             Route::get('/organizations', [OrganizationCrudController::class, 'index'])->name('admin.organizations.index');
             Route::post('/organizations', [OrganizationCrudController::class, 'store'])->name('admin.organizations.store');

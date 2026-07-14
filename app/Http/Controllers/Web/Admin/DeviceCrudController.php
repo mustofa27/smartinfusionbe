@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Web\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Device;
 use App\Models\Organization;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -105,5 +107,50 @@ class DeviceCrudController extends Controller
         $model->delete();
 
         return back()->with('success', 'Device deleted.');
+    }
+
+    public function showQrCode(int $device): View
+    {
+        $device = Device::query()->findOrFail($device);
+
+        $qrCodeData = sprintf('smartinfus://device/%s', $device->serial_number);
+
+        $qrCode = new QrCode($qrCodeData);
+        $writer = new SvgWriter;
+        $result = $writer->write($qrCode);
+        $qrSvg = $result->getString();
+
+        return view('admin.devices.qr-code', compact('device', 'qrSvg', 'qrCodeData'));
+    }
+
+    public function printAllQrCodes(): View
+    {
+        $devices = Device::query()
+            ->orderBy('serial_number')
+            ->get(['id', 'serial_number', 'model']);
+
+        $qrCodes = [];
+
+        $writer = new SvgWriter;
+
+        foreach ($devices as $device) {
+            $qrCodeData = sprintf('smartinfus://device/%s', $device->serial_number);
+
+            $qrCode = new QrCode(
+                data: $qrCodeData,
+                size: 200,
+                margin: 5,
+            );
+
+            $result = $writer->write($qrCode);
+
+            $qrCodes[] = [
+                'serial_number' => $device->serial_number,
+                'model' => $device->model,
+                'svg' => $result->getString(),
+            ];
+        }
+
+        return view('admin.devices.qr-codes-print', compact('qrCodes'));
     }
 }

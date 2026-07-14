@@ -59,6 +59,9 @@
     </div>
 
     <div class="rounded-xl bg-white border border-slate-200 p-5 mt-6 overflow-x-auto">
+        <div class="mb-4">
+            <a class="rounded bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 inline-block" href="{{ route('admin.devices.qr-codes.print') }}" target="_blank">Print All QR Codes</a>
+        </div>
         <table class="w-full text-sm">
             <thead>
                 <tr class="text-left border-b border-slate-200">
@@ -77,6 +80,7 @@
                         <a class="text-xs text-sky-700" href="{{ route('admin.devices.index', array_merge(request()->query(), ['sort' => 'last_seen_desc'])) }}">new</a>
                         <a class="text-xs text-sky-700" href="{{ route('admin.devices.index', array_merge(request()->query(), ['sort' => 'last_seen_asc'])) }}">old</a>
                     </th>
+                    <th class="py-2 pr-2">QR</th>
                     <th class="py-2 pr-2">Actions</th>
                 </tr>
             </thead>
@@ -90,6 +94,17 @@
                         <td class="py-3 pr-2">{{ $device->firmware_version }}</td>
                         <td class="py-3 pr-2">{{ $device->status }}</td>
                         <td class="py-3 pr-2">{{ optional($device->last_seen_at)->format('Y-m-d H:i:s') }}</td>
+                        <td class="py-3 pr-2">
+                            <a href="{{ route('admin.devices.qr-code', $device->id) }}" target="_blank" title="View QR Code">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600 hover:text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="2" width="8" height="8" rx="1"/>
+                                    <rect x="14" y="2" width="8" height="8" rx="1"/>
+                                    <rect x="2" y="14" width="8" height="8" rx="1"/>
+                                    <rect x="14" y="14" width="4" height="4"/>
+                                    <rect x="18" y="18" width="4" height="4"/>
+                                </svg>
+                            </a>
+                        </td>
                         <td class="py-3 pr-2">
                             <details>
                                 <summary class="cursor-pointer text-sky-700">Edit</summary>
