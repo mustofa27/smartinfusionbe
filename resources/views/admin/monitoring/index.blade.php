@@ -61,7 +61,7 @@
                         <td class="py-3 pr-2">{{ $session->last_flow_ml_per_hour }}</td>
                         <td class="py-3 pr-2">{{ optional($session->last_reading_at)->format('Y-m-d H:i:s') ?? '-' }}</td>
                         <td class="py-3 pr-2">
-                            <a class="rounded bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 text-xs" href="{{ route('admin.monitoring.show', $session->id) }}">Show Detail</a>
+                            <a class="inline-block rounded bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 text-xs" href="{{ route('admin.monitoring.show', $session->id) }}">Show Detail</a>
                         </td>
                     </tr>
                 @empty
