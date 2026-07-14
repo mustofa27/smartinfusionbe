@@ -166,8 +166,28 @@ What the app should do:
 
 ### 3. Start Infusion Session (Form)
 - Fields required (based on `required_fields`):
-  - **Patient ID** — integer input. **IMPORTANT: Patient and bed listing endpoints (`GET /api/v1/admin/patients` and `GET /api/v1/admin/beds`) are behind `middleware('admin')` — nurses cannot access them (they get 403).** The nurse must know the `patient_id` and `bed_id` in advance. Use plain text integer input fields. If time permits, propose adding two new backend endpoints `GET /api/v1/nurse/patients` and `GET /api/v1/nurse/beds` scoped to the nurse's organization that would allow dropdown selection.
-  - **Bed ID** — integer input (same API limitation as patients above).
+  - **Patient** — dropdown/autocomplete selector populated from `GET /api/v1/nurse/patients` (scoped to the nurse's organization, returns active patients only).
+    ```
+    GET /api/v1/nurse/patients
+    → 200
+    {
+      "data": [
+        { "id": 1, "medical_record_no": "MRN-001", "full_name": "John Doe" },
+        { "id": 2, "medical_record_no": "MRN-002", "full_name": "Jane Smith" }
+      ]
+    }
+    ```
+  - **Bed** — dropdown/autocomplete selector populated from `GET /api/v1/nurse/beds` (scoped to the nurse's organization, returns active beds only, with ward/room/bed labels).
+    ```
+    GET /api/v1/nurse/beds
+    → 200
+    {
+      "data": [
+        { "id": 1, "bed_number": "01", "room_number": "101", "ward_name": "Ward A" },
+        { "id": 2, "bed_number": "02", "room_number": "101", "ward_name": "Ward A" }
+      ]
+    }
+    ```
   - **Fluid name** — text input
   - **Bag volume (ml)** — numeric input
   - **Bag empty weight (grams)** — numeric input
@@ -364,7 +384,7 @@ NavGraph:
 - **Network errors:** Show a Snackbar/toast with retry option. Implement exponential backoff for retries.
 - **401 Unauthorized:** Clear session, redirect to login.
 - **403 Forbidden — "Nurse role required":** Show "Access Denied — Only nurses can monitor devices. You are logged in as {role}." Do NOT log out. Let them retry scanning or switch accounts.
-- **403 Forbidden — "Admin role required":** This occurs if a nurse calls any `GET /api/v1/admin/*` endpoint (patients, beds, etc.). These endpoints are admin-only. The Start Session form should never attempt to call those endpoints. Use plain text inputs for patient_id and bed_id instead.
+- **403 Forbidden — "Admin role required":** This occurs if a nurse calls any `GET /api/v1/admin/*` endpoint (patients, beds, etc.). These endpoints are admin-only. The Start Session form uses the nurse-scoped endpoints `GET /api/v1/nurse/patients` and `GET /api/v1/nurse/beds` instead, which return data for the nurse's organization.
 - **404 Not Found:** Show "Device not found for this organization" dialog. The nurse can tap "Try Again" to re-scan or enter the serial manually.
 - **422 Validation Error:** Parse the `message` and `errors` fields, display inline field errors in forms.
 - **409 Conflict:** e.g. "Device already has an active infusion session" — show error and optionally navigate to the existing session if device ID is known.
@@ -474,7 +494,7 @@ implementation("androidx.datastore:datastore-preferences:1.1.1")
 - The backend uses Sanctum token-based auth — tokens are prefixed with `{token_id}|` but the full string including the pipe is the token to send.
 - The `device_code` field always refers to `serial_number` (the value in the QR code).
 - **403 on the monitor endpoint (`/api/v1/nurse/monitor/by-device-code`) means the user's role is not "nurse".** The app should NOT log them out (they are still authenticated). Show a clear message that only nurse accounts can scan devices, and tell them their current role so they understand why. Let them retry scanning (in case they scanned the wrong QR code) or log out and switch accounts.
-- **Do NOT call `GET /api/v1/admin/patients` or `GET /api/v1/admin/beds` from a nurse session.** These endpoints are behind `middleware('admin')` and return 403 for nurses. The Start Session form must use plain text integer inputs for `patient_id` and `bed_id` instead of dropdown selectors that would require those API calls. If dropdown selectors are desired, new nurse-scoped endpoints need to be added to the backend first.
+- The Start Session form uses `GET /api/v1/nurse/patients` and `GET /api/v1/nurse/beds` for dropdown/autocomplete selectors. These endpoints are scoped to the nurse's organization and only return active records. Do NOT call `GET /api/v1/admin/patients` or `GET /api/v1/admin/beds` — those are admin-only and return 403 for nurses.
 
 ---
 
@@ -484,7 +504,7 @@ implementation("androidx.datastore:datastore-preferences:1.1.1")
 2. **Auth** — Login screen, TokenManager, AuthInterceptor, auto-login check
 3. **Dashboard** — Active sessions list with pull-to-refresh
 4. **QR Scanner** — CameraX + ML Kit Barcode Scanning, parse serial number, call monitor endpoint
-5. **Start Session** — Form with plain text Patient ID / Bed ID fields (NOT dropdowns), validation, submit
+5. **Start Session** — Form with dropdown selectors for Patient and Bed (populated from `GET /api/v1/nurse/patients` and `GET /api/v1/nurse/beds`), validation, submit
 6. **Session Detail** — Full info display + Pause/Complete/Interrupt buttons
 7. **Alerts** — List screen + acknowledge action
 8. **Device Assignments** — List, mount, unmount

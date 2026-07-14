@@ -31,6 +31,8 @@ Route::prefix('v1')->group(function (): void {
             Route::get('/alerts', [NurseMonitoringController::class, 'alerts']);
             Route::post('/alerts/{alertId}/acknowledge', [NurseMonitoringController::class, 'acknowledgeAlert']);
             Route::post('/fcm-tokens', [NurseMonitoringController::class, 'registerFcmToken']);
+            Route::get('/patients', [NurseMonitoringController::class, 'patients']);
+            Route::get('/beds', [NurseMonitoringController::class, 'beds']);
         });
 
         Route::middleware('admin-or-nurse')->group(function (): void {

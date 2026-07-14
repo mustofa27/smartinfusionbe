@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Alert;
+use App\Models\Bed;
 use App\Models\Device;
 use App\Models\InfusionSession;
 use App\Models\NurseDeviceSubscription;
@@ -497,6 +498,45 @@ class NurseMonitoringController extends Controller
                 'status' => $alert->status,
                 'acknowledged_at' => $alert->acknowledged_at,
             ],
+        ]);
+    }
+
+    public function patients(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $this->assertNurse($user);
+
+        $patients = Patient::query()
+            ->where('organization_id', $user->organization_id)
+            ->where('is_active', true)
+            ->orderBy('full_name')
+            ->get(['id', 'medical_record_no', 'full_name']);
+
+        return response()->json([
+            'data' => $patients,
+        ]);
+    }
+
+    public function beds(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $this->assertNurse($user);
+
+        $beds = Bed::query()
+            ->join('rooms', 'rooms.id', '=', 'beds.room_id')
+            ->join('wards', 'wards.id', '=', 'rooms.ward_id')
+            ->where('wards.organization_id', $user->organization_id)
+            ->where('beds.status', 'active')
+            ->orderBy('wards.name')
+            ->orderBy('rooms.room_number')
+            ->orderBy('beds.bed_number')
+            ->select('beds.id', 'beds.bed_number', 'rooms.room_number', 'wards.name as ward_name')
+            ->get();
+
+        return response()->json([
+            'data' => $beds,
         ]);
     }
 
