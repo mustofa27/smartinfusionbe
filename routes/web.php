@@ -72,6 +72,7 @@ Route::prefix('admin')->group(function (): void {
         Route::delete('/beds/{bed}', [BedCrudController::class, 'destroy'])->name('admin.beds.destroy');
 
         Route::get('/monitoring', [MonitoringController::class, 'index'])->name('admin.monitoring.index');
+        Route::get('/monitoring/{session}', [MonitoringController::class, 'show'])->name('admin.monitoring.show');
         Route::post('/monitoring/alerts/{alert}/acknowledge', [MonitoringController::class, 'acknowledge'])->name('admin.monitoring.alerts.acknowledge');
         Route::post('/monitoring/alerts/{alert}/resolve', [MonitoringController::class, 'resolve'])->name('admin.monitoring.alerts.resolve');
 

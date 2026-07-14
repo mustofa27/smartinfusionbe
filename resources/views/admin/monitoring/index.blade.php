@@ -31,6 +31,7 @@
                     <th class="py-2 pr-2">Session ID</th>
                     <th class="py-2 pr-2">Patient</th>
                     <th class="py-2 pr-2">MRN</th>
+                    <th class="py-2 pr-2">Bed</th>
                     <th class="py-2 pr-2">Device</th>
                     <th class="py-2 pr-2">Fluid</th>
                     <th class="py-2 pr-2">
@@ -44,6 +45,7 @@
                         <a class="text-xs text-sky-700" href="{{ route('admin.monitoring.index', array_merge(request()->query(), ['session_sort' => 'started_desc'])) }}">new</a>
                         <a class="text-xs text-sky-700" href="{{ route('admin.monitoring.index', array_merge(request()->query(), ['session_sort' => 'started_asc'])) }}">old</a>
                     </th>
+                    <th class="py-2 pr-2">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -52,14 +54,18 @@
                         <td class="py-3 pr-2">{{ $session->id }}</td>
                         <td class="py-3 pr-2">{{ $session->patient_name ?? '-' }}</td>
                         <td class="py-3 pr-2">{{ $session->patient_mrn ?? '-' }}</td>
+                        <td class="py-3 pr-2">{{ $session->ward_name ?? '' }} {{ $session->room_number ?? '' }}-{{ $session->bed_number ?? '-' }}</td>
                         <td class="py-3 pr-2">{{ $session->device_serial ?? '-' }}</td>
                         <td class="py-3 pr-2">{{ $session->fluid_name }}</td>
                         <td class="py-3 pr-2">{{ $session->last_remaining_ml }}</td>
                         <td class="py-3 pr-2">{{ $session->last_flow_ml_per_hour }}</td>
                         <td class="py-3 pr-2">{{ optional($session->last_reading_at)->format('Y-m-d H:i:s') ?? '-' }}</td>
+                        <td class="py-3 pr-2">
+                            <a class="rounded bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 text-xs" href="{{ route('admin.monitoring.show', $session->id) }}">Show Detail</a>
+                        </td>
                     </tr>
                 @empty
-                    <tr><td class="py-4 text-slate-500" colspan="8">No active sessions.</td></tr>
+                    <tr><td class="py-4 text-slate-500" colspan="10">No active sessions.</td></tr>
                 @endforelse
             </tbody>
         </table>
