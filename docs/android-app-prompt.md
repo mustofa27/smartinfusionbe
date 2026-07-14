@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Build an Android application in **Kotlin** that serves as the nurse's mobile companion for the **Smart Infus** infusion pump monitoring system. The app connects to the backend Laravel API to allow nurses to scan device QR codes, monitor active infusion sessions, start/stop sessions, receive real-time alerts via MQTT + FCM push notifications, and manage device assignments.
+Build an Android application in **Kotlin** that serves as the nurse's mobile companion for the **Smart Infus** infusion pump monitoring system. The app connects to the backend Laravel API to allow nurses to scan device QR codes, monitor active infusion sessions, start/stop sessions, and receive real-time alerts via MQTT + FCM push notifications.
 
 ## Core Technology Stack
 
@@ -277,22 +277,7 @@ POST /api/v1/nurse/infusion-sessions/start
   { "message": "Alert acknowledged.", "data": { "id": 1, "status": "acknowledged", "acknowledged_at": "..." } }
   ```
 
-### 6. Device Assignment Management (Admin/Nurse role)
-- GET `/api/v1/device-assignments` — list mounted devices with bed location
-  - Response includes: `serial_number`, `ward_name`, `room_number`, `bed_number`, `mounted_at`
-- POST `/api/v1/device-assignments` — mount device to a bed
-  ```
-  { "device_id": 5, "bed_id": 10 }
-  → 201 { "data": { ... } }
-  ```
-- POST `/api/v1/device-assignments/{id}/unmount` — unmount device from bed
-  ```
-  → 200 { "message": "Assignment unmounted." }
-  ```
-
-- Used for tracking which infusion pump is physically at which bed.
-
-### 7. Push Notifications (FCM)
+### 6. Push Notifications (FCM)
 - On login/startup, register the device's FCM token:
   ```
   POST /api/v1/nurse/fcm-tokens
@@ -368,7 +353,6 @@ NavGraph:
     │     └── SessionDetailScreen — if 200 + session_required=false
     └── AlertsScreen — bottom nav or top bar icon
           └── AlertDetail (optional)
-    └── DeviceAssignmentsScreen — menu item (admin/nurse role)
 ```
 
 ## MQTT Integration (Optional but Recommended)
@@ -430,8 +414,7 @@ com.smartinfus.app/
 │   ├── sessiondetail/
 │   ├── scanner/
 │   ├── startsession/
-│   ├── alerts/
-│   └── assignments/
+│   └── alerts/
 ├── di/
 │   └── AppModule.kt
 ├── notification/
@@ -447,9 +430,8 @@ com.smartinfus.app/
 4. **Session management** (view active sessions, start / pause / complete / interrupt).
 5. **Alert management** (view open alerts, acknowledge).
 6. **FCM push notification registration** so the backend can push alerts.
-7. **Device assignment** (mount/unmount device to/from beds) for admin/nurse roles.
-8. **Real-time updates** via polling (or MQTT if desired).
-9. **Proper error handling** for network failures, validation errors, conflicts, and auth expiry.
+7. **Real-time updates** via polling (or MQTT if desired).
+8. **Proper error handling** for network failures, validation errors, conflicts, and auth expiry.
 
 ## Dependencies (build.gradle.kts)
 
@@ -507,7 +489,6 @@ implementation("androidx.datastore:datastore-preferences:1.1.1")
 5. **Start Session** — Form with dropdown selectors for Patient and Bed (populated from `GET /api/v1/nurse/patients` and `GET /api/v1/nurse/beds`), validation, submit
 6. **Session Detail** — Full info display + Pause/Complete/Interrupt buttons
 7. **Alerts** — List screen + acknowledge action
-8. **Device Assignments** — List, mount, unmount
-9. **FCM** — Token registration, push notification handling
-10. **Real-time updates (optional)** — polling timer or MQTT client
-11. **Polish** — Error handling, empty states, loading indicators, edge cases
+8. **FCM** — Token registration, push notification handling
+9. **Real-time updates (optional)** — polling timer or MQTT client
+10. **Polish** — Error handling, empty states, loading indicators, edge cases

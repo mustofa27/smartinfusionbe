@@ -7,7 +7,6 @@ use App\Http\Controllers\Api\V1\Admin\DeviceController;
 use App\Http\Controllers\Api\V1\Admin\PatientController;
 use App\Http\Controllers\Api\V1\Admin\RoomController;
 use App\Http\Controllers\Api\V1\Admin\WardController;
-use App\Http\Controllers\Api\V1\DeviceAssignmentController;
 use App\Http\Controllers\Api\V1\NurseMonitoringController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,12 +32,6 @@ Route::prefix('v1')->group(function (): void {
             Route::post('/fcm-tokens', [NurseMonitoringController::class, 'registerFcmToken']);
             Route::get('/patients', [NurseMonitoringController::class, 'patients']);
             Route::get('/beds', [NurseMonitoringController::class, 'beds']);
-        });
-
-        Route::middleware('admin-or-nurse')->group(function (): void {
-            Route::get('/device-assignments', [DeviceAssignmentController::class, 'index']);
-            Route::post('/device-assignments', [DeviceAssignmentController::class, 'store']);
-            Route::post('/device-assignments/{assignment}/unmount', [DeviceAssignmentController::class, 'unmount']);
         });
 
         Route::middleware('admin')->prefix('admin')->group(function (): void {

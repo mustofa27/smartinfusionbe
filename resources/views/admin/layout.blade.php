@@ -15,7 +15,6 @@
             <nav class="mt-8 space-y-2 text-sm">
                 <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.dashboard') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.dashboard') }}">Dashboard</a>
                 <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.patients.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.patients.index') }}">Patients</a>
-                <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.device-assignments.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.device-assignments.index') }}">Device Assignments</a>
                 <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.alert-rules.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.alert-rules.index') }}">Alert Rules</a>
                 <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.monitoring.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.monitoring.index') }}">Monitoring</a>
                 <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.wards.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.wards.index') }}">Wards</a>

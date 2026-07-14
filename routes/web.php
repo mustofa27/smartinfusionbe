@@ -4,7 +4,6 @@ use App\Http\Controllers\Web\Admin\AlertRuleCrudController;
 use App\Http\Controllers\Web\Admin\BedCrudController;
 use App\Http\Controllers\Web\Admin\AuthController;
 use App\Http\Controllers\Web\Admin\DashboardController;
-use App\Http\Controllers\Web\Admin\DeviceAssignmentCrudController;
 use App\Http\Controllers\Web\Admin\DeviceCrudController;
 use App\Http\Controllers\Web\Admin\MonitoringController;
 use App\Http\Controllers\Web\Admin\OrganizationCrudController;
@@ -51,10 +50,6 @@ Route::prefix('admin')->group(function (): void {
             Route::put('/users/{user}', [UserCrudController::class, 'update'])->name('admin.users.update');
             Route::delete('/users/{user}', [UserCrudController::class, 'destroy'])->name('admin.users.destroy');
         });
-
-        Route::get('/device-assignments', [DeviceAssignmentCrudController::class, 'index'])->name('admin.device-assignments.index');
-        Route::post('/device-assignments', [DeviceAssignmentCrudController::class, 'store'])->name('admin.device-assignments.store');
-        Route::post('/device-assignments/{assignment}/unmount', [DeviceAssignmentCrudController::class, 'unmount'])->name('admin.device-assignments.unmount');
 
         Route::get('/alert-rules', [AlertRuleCrudController::class, 'index'])->name('admin.alert-rules.index');
         Route::post('/alert-rules', [AlertRuleCrudController::class, 'store'])->name('admin.alert-rules.store');
