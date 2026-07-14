@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\NurseFcmToken;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,7 @@ class AuthController extends Controller
             'email' => ['required', 'email', 'max:190'],
             'password' => ['required', 'string'],
             'device_name' => ['nullable', 'string', 'max:80'],
+            'fcm_token' => ['nullable', 'string', 'max:500'],
         ]);
 
         $organization = Organization::query()
@@ -59,6 +61,20 @@ class AuthController extends Controller
         $plainTextToken = $user->createToken($tokenName, $abilities)->plainTextToken;
 
         $user->forceFill(['last_login_at' => now()])->save();
+
+        if ($user->role === 'nurse' && ! empty($validated['fcm_token'])) {
+            NurseFcmToken::query()->updateOrCreate(
+                [
+                    'organization_id' => $user->organization_id,
+                    'nurse_user_id' => $user->id,
+                    'fcm_token' => $validated['fcm_token'],
+                ],
+                [
+                    'is_active' => true,
+                    'last_seen_at' => now(),
+                ],
+            );
+        }
 
         return response()->json([
             'token' => $plainTextToken,
