@@ -278,18 +278,268 @@ POST /api/v1/nurse/infusion-sessions/start
   ```
 
 ### 6. Push Notifications (FCM)
-- On login/startup, register the device's FCM token:
-  ```
-  POST /api/v1/nurse/fcm-tokens
-  {
-    "fcm_token": "firebase-token-here",
-    "app_version": "1.0.0",
-    "device_os": "Android 14",
-    "device_model": "Samsung Galaxy S24"
+
+#### 6.1 FCM Token Registration
+- On login/startup, register the device's FCM token via `POST /api/v1/nurse/fcm-tokens`
+- Also send the token on `FirebaseMessagingService.onNewToken()` (token refresh)
+- If the user is not logged in when the token refreshes, save it locally and send it after the next login
+
+```json
+POST /api/v1/nurse/fcm-tokens
+{
+  "fcm_token": "firebase-token-here",
+  "app_version": "1.0.0",
+  "device_os": "Android 14",
+  "device_model": "Samsung Galaxy S24"
+}
+```
+
+#### 6.2 Backend FCM Payload Structure
+
+**CRITICAL REQUIREMENT: The backend MUST include BOTH `notification` AND `data` blocks in every FCM message.**
+
+On Android, **data-only messages** (without a `notification` block) are **silently dropped** when the app is killed or swiped away. The `onMessageReceived` callback will NOT fire for data-only messages if the app is not running. This is documented Android behavior from FCM.
+
+The backend (`FcmPushService.php` → `sendToToken()`) sends messages via the **FCM v1 HTTP API** with this structure:
+
+```json
+// FCM v1 API format (what the server actually sends)
+{
+  "message": {
+    "token": "{{FCM_TOKEN}}",
+    "notification": {
+      "title": "CRITICAL infusion alert",
+      "body": "Occlusion detected on device INF-001. Flow rate dropped to 0 ml/h."
+    },
+    "data": {
+      "alert_id": "42",
+      "device_id": "5",
+      "alert_type": "occlusion",
+      "status": "open"
+    },
+    "android": {
+      "priority": "high"
+    }
   }
-  ```
-- The backend sends FCM push notifications when alerts are triggered for devices the nurse is subscribed to.
-- When the user taps a push notification, deep-link to the Alerts screen or the relevant Session Detail.
+}
+```
+
+**For reference, the equivalent legacy HTTP API format** (often used in Firebase Console tests):
+```json
+{
+  "to": "{{FCM_TOKEN}}",
+  "notification": {
+    "title": "CRITICAL infusion alert",
+    "body": "Occlusion detected on device INF-001. Flow rate dropped to 0 ml/h."
+  },
+  "data": {
+    "alert_id": "42",
+    "device_id": "5",
+    "alert_type": "occlusion",
+    "status": "open"
+  },
+  "android": {
+    "priority": "high"
+  }
+}
+```
+
+**Field definitions:**
+
+| Field | Value | Source in code |
+|-------|-------|----------------|
+| `notification.title` | `"{SEVERITY} infusion alert"` — severity in uppercase: CRITICAL, WARNING, INFO | `strtoupper($alert->severity).' infusion alert'` in `DispatchAlertFcmJob` |
+| `notification.body` | The alert's `message` field from the database (full alert text) | `$alert->message` in `DispatchAlertFcmJob` |
+| `data.alert_id` | String — primary key of the Alert record | `(string) $alert->id` |
+| `data.device_id` | String — primary key of the Device record | `(string) $alert->device_id` |
+| `data.alert_type` | String — one of: occlusion, air_in_line, low_battery, flow_error, near_empty, empty, disconnect | `$alert->alert_type` |
+| `data.status` | String — open, acknowledged, or resolved | `$alert->status` |
+| `android.priority` | `"high"` — ensures heads-up display and delivery priority | Hardcoded in `FcmPushService` |
+
+> **Note:** `severity` is NOT currently in the data payload — enhancement possible if needed.
+
+**Expected Android behavior by app state:**
+
+| App State | `notification` + `data` (as sent) | `data` only (what to avoid) |
+|-----------|-----------------------------------|----------------------------|
+| Foreground | ✅ `onMessageReceived` fires. Notification shown programmatically + in-app banner | ✅ `onMessageReceived` fires. Must build notification manually |
+| Background | ✅ **System displays notification automatically** in the tray/heads-up. `data` available when user taps. | ❌ `onMessageReceived` does NOT fire (silent). Notification never shown. |
+| Killed/swiped | ✅ **System displays notification automatically** in the tray. `data` available when user taps. | ❌ `onMessageReceived` does NOT fire. Notification never shown. |
+
+**Testing checklist to verify correct backend behavior:**
+
+| Test | Expected result |
+|------|----------------|
+| Send test FCM via Firebase Console | ✅ Notification appears (confirms Android app is configured correctly) |
+| Send from backend with `notification` + `data` blocks | ✅ Notification shows in all states: foreground, background, killed |
+| Send from backend **without** `notification` block (data-only) | ❌ Notification does NOT show when app is killed/swiped away |
+| App in foreground + message received | ✅ `onMessageReceived` callback fires → app shows in-app banner + posts notification to tray |
+| App in background + message received | ✅ System displays notification automatically in notification drawer + heads-up pop-up |
+| App killed/swiped + message received | ✅ System displays notification automatically in notification drawer |
+| Tap notification when app was killed | ✅ Opens app → `MainActivity.onCreate()` receives intent extras → navigates to Alerts screen |
+
+#### 6.3 Service Implementation (`SmartInfusFirebaseService.kt`)
+
+Create a class extending `FirebaseMessagingService` with three responsibilities:
+
+**a) `onNewToken(token)`** — Send the new FCM token to the server if the user is authenticated (store in EncryptedSharedPreferences, send via Retrofit).
+
+**b) `onMessageReceived(message)`** — Extract the data payload and build the notification:
+
+```kotlin
+override fun onMessageReceived(message: RemoteMessage) {
+    val data = message.data
+    val alertId = data["alert_id"]
+    val deviceId = data["device_id"]
+    val alertType = data["alert_type"]
+    val status = data["status"]
+
+    val title = message.notification?.title ?: getDefaultTitle(alertType)
+    val body = message.notification?.body ?: getDefaultBody(alertType)
+
+    showNotification(title, body, alertId, deviceId, navigateTo = "alerts_list")
+}
+```
+
+**c) `showNotification(...)`** — Build and display the notification using `NotificationCompat.Builder` with the specifications below.
+
+#### 6.4 Notification Presentation Specification
+
+**Channel configuration (Android 8+):**
+| Property | Value |
+|----------|-------|
+| Channel ID | `infusion_alerts` |
+| Channel name | "Infusion Alerts" |
+| Channel description | "Push notifications for infusion pump alerts" |
+| Importance | `IMPORTANCE_HIGH` |
+| Vibration | Enabled (default pattern) |
+| Sound | Default notification sound |
+| Lights | Enabled (if device supports) |
+| Lockscreen visibility | `VISIBILITY_PUBLIC` — content visible (medical urgency) |
+
+**Notification UI (system tray):**
+```
+┌──────────────────────────────────────┐
+│ 🔴  CRITICAL infusion alert          │  ← title (bold)
+│     Occlusion detected on device     │  ← body text
+│     INF-001. Flow rate dropped to    │
+│     0 ml/h.                          │
+│                             10:32 AM │  ← system-generated time
+└──────────────────────────────────────┘
+```
+
+| Property | Implementation |
+|----------|---------------|
+| Small icon | `R.drawable.ic_notification_alert` (white, monochrome) |
+| Title | `message.notification.title` (e.g. "CRITICAL infusion alert") |
+| Body | `message.notification.body` (e.g. "Occlusion detected on device INF-001...") |
+| Style | `NotificationCompat.BigTextStyle` — applied when `body.length > 60` so full text is readable without expanding |
+| Priority | `PRIORITY_HIGH` |
+| Category | `CATEGORY_ALARM` or `CATEGORY_CALL` (for heads-up pop-up behavior) |
+| Auto-cancel | `true` — notification removed from tray on tap |
+| Badge | `true` — show count badge on app icon |
+
+**Notification identity — unique per alert:**
+```kotlin
+val notificationId = 1000 + (alertId.hashCode())
+```
+- Each distinct alert gets its own row in the drawer
+- If the same `alert_id` arrives again, it updates the existing notification (replaces in-place)
+- Different alerts are stacked as separate rows
+
+#### 6.5 Tap Action & Deep Linking
+
+When the user taps the notification, **navigate to the Alerts List screen**:
+
+**Intent extras passed to `MainActivity`:**
+```
+EXTRA_NAVIGATE_TO = "alerts_list"
+EXTRA_ALERT_ID    = "42"
+EXTRA_DEVICE_ID   = "5"
+EXTRA_ALERT_TYPE  = "occlusion"
+EXTRA_STATUS      = "open"
+```
+
+**Handling logic in `MainActivity`:**
+- `onCreate()` — Check if launched from notification intent → parse extras → navigate to Alerts fragment
+- `onNewIntent()` — Same handling when app is already open (in background or foreground)
+
+**Alternative deep-link (if user is viewing a specific session):**
+If the notification corresponds to a device the nurse is actively viewing, optionally navigate to Session Detail instead. The `device_id` in the data payload enables this.
+
+#### 6.6 In-App Foreground Behavior
+
+When the app is already visible and a notification arrives:
+
+| Layer | Behavior |
+|-------|----------|
+| System notification | Always posted (so it appears in the tray if user switches apps) |
+| In-app UI | Show a **top banner** or **Snackbar** inside the app: |
+
+```
+┌──────────────────────────────────────┐
+│ 🔴  CRITICAL infusion alert          │  ← Persistent top banner
+│     Occlusion detected on INF-001    │
+│     [View] [Dismiss]                 │
+├──────────────────────────────────────┤
+│        (current screen content)      │
+└──────────────────────────────────────┘
+```
+
+If the user is on the Alerts List screen, automatically refresh the list to show the new alert.
+
+#### 6.7 Dismissal Semantics (Important)
+
+| Action | Does it acknowledge the alert server-side? |
+|--------|-------------------------------------------|
+| Swipe away notification | **NO** — alert remains `status: open` on server |
+| Tap notification → open app | **NO** — just opens the Alerts screen |
+| Tap "Acknowledge" in Alerts screen | **YES** — calls `POST /api/v1/nurse/alerts/{id}/acknowledge` |
+
+The notification is only a **delivery mechanism**. Acknowledgment must be done explicitly by the user via the Alerts API endpoint.
+
+#### 6.8 Multiple Alerts — Notification Stacking
+
+When several alerts arrive while the user is away:
+
+```
+Notification Drawer:
+┌──────────────────────────────────────┐
+│ 🔴  CRITICAL infusion alert          │  ← most recent (top)
+│     Empty: INF-003 bag is empty.     │
+├──────────────────────────────────────┤
+│ 🔴  CRITICAL infusion alert          │
+│     Occlusion on INF-001.            │
+├──────────────────────────────────────┤
+│ 🟡  WARNING infusion alert           │
+│     Near empty: INF-002.             │
+└──────────────────────────────────────┘
+```
+
+Each is a separate row (unique notification ID). Tapping any one opens the Alerts List. Optionally use `NotificationCompat.InboxStyle` for a summary if the count exceeds a threshold (e.g., 5+ alerts).
+
+#### 6.9 Summary of Notification Presentation Decisions
+
+```
+┌─────────────────────────────────────────────────┐
+│ Notification Presentation Checklist              │
+├─────────────────────────────────────────────────┤
+│ [x] Importance: HIGH                             │
+│ [x] Heads-up pop-up: YES                         │
+│ [x] Vibration: YES (default pattern)             │
+│ [x] Sound: YES (default notification sound)      │
+│ [x] Lights: YES                                  │
+│ [x] Lock screen visibility: PUBLIC               │
+│ [x] Channel: "Infusion Alerts"                   │
+│ [x] Notification ID: UNIQUE per alert_id          │
+│ [x] Big text style: YES for long body text        │
+│ [x] Auto-cancel on tap: YES                      │
+│ [x] Badge count: YES                              │
+│ [x] Foreground: Post notification + in-app banner │
+│ [x] Tap action: Deep-link to Alerts List screen   │
+│ [x] Swipe dismiss: Does NOT acknowledge server    │
+└─────────────────────────────────────────────────┘
+```
 
 ## Data Models (reference for Android entities)
 
