@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\DeviceStatusController;
 use App\Http\Controllers\Api\V1\Admin\AlertRuleController;
 use App\Http\Controllers\Api\V1\Admin\BedController;
 use App\Http\Controllers\Api\V1\Admin\DeviceController;
@@ -16,6 +17,8 @@ Route::prefix('v1')->group(function (): void {
     });
 
     Route::post('/auth/login', [AuthController::class, 'login']);
+
+    Route::get('/device-status/monitored', [DeviceStatusController::class, 'monitoredStatus']);
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
