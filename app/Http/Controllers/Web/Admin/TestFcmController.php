@@ -83,6 +83,7 @@ class TestFcmController extends Controller
 
         $successCount = 0;
         $failCount = 0;
+        $lastError = null;
 
         foreach ($tokens as $token) {
             $result = $fcmPushService->sendToToken(
@@ -96,6 +97,7 @@ class TestFcmController extends Controller
                 $successCount++;
             } else {
                 $failCount++;
+                $lastError = $result['error'];
             }
         }
 
@@ -103,6 +105,10 @@ class TestFcmController extends Controller
         $message = "Test notification sent to {$successCount}/{$totalTargeted} device(s).";
         if ($failCount > 0) {
             $message .= " {$failCount} failed.";
+        }
+
+        if ($lastError) {
+            return back()->with('fcm_error', $lastError)->with('success', $message);
         }
 
         return back()->with('success', $message);

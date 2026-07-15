@@ -45,6 +45,13 @@
                 </div>
             @endif
 
+            @if (session('fcm_error'))
+                <div class="mb-4 rounded border border-rose-200 bg-rose-50 text-rose-800 px-4 py-3">
+                    <p class="font-medium mb-1">FCM API Error</p>
+                    <pre class="text-xs whitespace-pre-wrap break-all">{{ session('fcm_error') }}</pre>
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="mb-4 rounded border border-rose-200 bg-rose-50 text-rose-800 px-4 py-3">
                     <p class="font-medium mb-2">Please fix the following:</p>
