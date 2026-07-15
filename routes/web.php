@@ -41,6 +41,9 @@ Route::prefix('admin')->group(function (): void {
             Route::get('/devices/qr-codes/print', [DeviceCrudController::class, 'printAllQrCodes'])->name('admin.devices.qr-codes.print');
             Route::get('/devices/{device}/qr-code', [DeviceCrudController::class, 'showQrCode'])->name('admin.devices.qr-code');
 
+            Route::get('/test-fcm', [TestFcmController::class, 'index'])->name('admin.test-fcm.index');
+            Route::post('/test-fcm', [TestFcmController::class, 'send'])->name('admin.test-fcm.send');
+
             Route::get('/organizations', [OrganizationCrudController::class, 'index'])->name('admin.organizations.index');
             Route::post('/organizations', [OrganizationCrudController::class, 'store'])->name('admin.organizations.store');
             Route::put('/organizations/{organization}', [OrganizationCrudController::class, 'update'])->name('admin.organizations.update');
@@ -76,9 +79,6 @@ Route::prefix('admin')->group(function (): void {
         Route::get('/monitoring/{session}', [MonitoringController::class, 'show'])->name('admin.monitoring.show');
         Route::post('/monitoring/alerts/{alert}/acknowledge', [MonitoringController::class, 'acknowledge'])->name('admin.monitoring.alerts.acknowledge');
         Route::post('/monitoring/alerts/{alert}/resolve', [MonitoringController::class, 'resolve'])->name('admin.monitoring.alerts.resolve');
-
-        Route::get('/test-fcm', [TestFcmController::class, 'index'])->name('admin.test-fcm.index');
-        Route::post('/test-fcm', [TestFcmController::class, 'send'])->name('admin.test-fcm.send');
 
     });
 });

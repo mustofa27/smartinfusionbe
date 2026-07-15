@@ -83,7 +83,7 @@
         </p>
         <pre class="bg-slate-900 text-slate-100 text-xs rounded p-4 overflow-x-auto"><code>{
   "message": {
-    "token": "{{FCM_TOKEN}}",
+    "token": "[FCM_TOKEN]",
     "notification": {
       "title": "{{ old('title', 'Test notification from admin') }}",
       "body": "{{ old('body', 'This is a test push notification...') }}"

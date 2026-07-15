@@ -17,7 +17,6 @@
                 <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.patients.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.patients.index') }}">Patients</a>
                 <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.alert-rules.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.alert-rules.index') }}">Alert Rules</a>
                 <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.monitoring.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.monitoring.index') }}">Monitoring</a>
-                <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.test-fcm.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.test-fcm.index') }}">Test FCM</a>
                 <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.wards.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.wards.index') }}">Wards</a>
                 <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.rooms.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.rooms.index') }}">Rooms</a>
                 <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.beds.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.beds.index') }}">Beds</a>
@@ -28,6 +27,7 @@
                         <a class="mt-1 block px-3 py-2 rounded {{ request()->routeIs('admin.organizations.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.organizations.index') }}">Organizations</a>
                         <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.users.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.users.index') }}">Users</a>
                         <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.devices.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.devices.index') }}">Devices</a>
+                        <a class="block px-3 py-2 rounded {{ request()->routeIs('admin.test-fcm.*') ? 'bg-emerald-600' : 'hover:bg-slate-800' }}" href="{{ route('admin.test-fcm.index') }}">Test FCM</a>
                     </div>
                 @endif
             </nav>
