@@ -21,6 +21,7 @@ class DispatchAlertFcmJob implements ShouldQueue
     {
         $alert = Alert::query()->find($this->alertId);
         if (! $alert) {
+            \Illuminate\Support\Facades\Log::warning('DispatchAlertFcmJob: Alert not found', ['alert_id' => $this->alertId]);
             return;
         }
 
@@ -29,6 +30,14 @@ class DispatchAlertFcmJob implements ShouldQueue
             ->where('device_id', $alert->device_id)
             ->pluck('nurse_user_id')
             ->all();
+
+        \Illuminate\Support\Facades\Log::info('DispatchAlertFcmJob: subscriptions lookup', [
+            'alert_id' => $alert->id,
+            'organization_id' => $alert->organization_id,
+            'device_id' => $alert->device_id,
+            'subscription_count' => count($targetUserIds),
+            'subscribed_nurse_ids' => $targetUserIds,
+        ]);
 
         if ($targetUserIds === []) {
             return;
@@ -39,6 +48,11 @@ class DispatchAlertFcmJob implements ShouldQueue
             ->whereIn('nurse_user_id', $targetUserIds)
             ->where('is_active', true)
             ->get();
+
+        \Illuminate\Support\Facades\Log::info('DispatchAlertFcmJob: token lookup', [
+            'token_count' => $tokens->count(),
+            'token_user_ids' => $tokens->pluck('nurse_user_id')->all(),
+        ]);
 
         foreach ($tokens as $token) {
             $delivery = AlertDelivery::query()->create([
