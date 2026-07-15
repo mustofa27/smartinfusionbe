@@ -6,6 +6,7 @@ use App\Http\Controllers\Web\Admin\AuthController;
 use App\Http\Controllers\Web\Admin\DashboardController;
 use App\Http\Controllers\Web\Admin\DeviceCrudController;
 use App\Http\Controllers\Web\Admin\MonitoringController;
+use App\Http\Controllers\Web\Admin\TestFcmController;
 use App\Http\Controllers\Web\Admin\OrganizationCrudController;
 use App\Http\Controllers\Web\Admin\PatientCrudController;
 use App\Http\Controllers\Web\Admin\RoomCrudController;
@@ -75,6 +76,9 @@ Route::prefix('admin')->group(function (): void {
         Route::get('/monitoring/{session}', [MonitoringController::class, 'show'])->name('admin.monitoring.show');
         Route::post('/monitoring/alerts/{alert}/acknowledge', [MonitoringController::class, 'acknowledge'])->name('admin.monitoring.alerts.acknowledge');
         Route::post('/monitoring/alerts/{alert}/resolve', [MonitoringController::class, 'resolve'])->name('admin.monitoring.alerts.resolve');
+
+        Route::get('/test-fcm', [TestFcmController::class, 'index'])->name('admin.test-fcm.index');
+        Route::post('/test-fcm', [TestFcmController::class, 'send'])->name('admin.test-fcm.send');
 
     });
 });
